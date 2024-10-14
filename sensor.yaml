@@ -1,0 +1,19 @@
+# Sensors to pull data from HA for weather actual, weather forecast, sunset, Tibber pricing
+- platform: template
+  sensors:
+    epaper_weather_actual:
+    #weahtericon;temperature;humidity,pressure;wind_speed
+      value_template: "{{states('weather.forecast_home')}};{{state_attr('weather.forecast_home', 'temperature') | replace('.',',') }};{{state_attr('weather.forecast_home', 'humidity') | replace('.',',') }};{{state_attr('weather.forecast_home', 'pressure') | replace('.',',') }};{{state_attr('weather.forecast_home', 'wind_speed') | replace('.',',') }}"
+    epaper_weather_forecast:
+      value_template: "{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[0].datetime) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[0].condition}};{{state_attr('sensor.forecast_next_days', 'forecast')[0].temperature | replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[0].templow | replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[1].datetime) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[1].condition}};{{state_attr('sensor.forecast_next_days', 'forecast')[1].temperature | replace('â',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[1].templow | replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[2].datetime) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[2].condition}};{{state_attr('sensor.forecast_next_days', 'forecast')[2].temperature | replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[2].templow | replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[3].datetime) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[3].condition}};{{state_attr('sensor.forecast_next_days', 'forecast')[3].temperature | replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[3].templow | replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[4].datetime) | timestamp_custom('%a')}};{{state_attr('sensor.forecast_next_days', 'forecast')[4].condition}};{{state_attr('sensor.forecast_next_days', 'forecast')[4].temperature | replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[4].templow | replace('.',',') }}"
+    epaper_sunrise:
+      value_template: "{{ as_timestamp(state_attr('sun.sun', 'next_dawn')) | timestamp_custom('%H:%M') }}"
+    epaper_sunset:
+      value_template: "{{ as_timestamp(state_attr('sun.sun', 'next_dusk')) | timestamp_custom('%H:%M') }}"
+    epaper_maxprice:
+      value_template: "{{ (state_attr('sensor.electricity_price_haus', 'max_price')) }}"
+    epaper_minprice:
+      value_template: "{{ (state_attr('sensor.electricity_price_haus', 'min_price')) }}"
+    epaper_pricelevel:
+      value_template: "{{ (state_attr('sensor.electricity_price_haus', 'price_level')) }}"
+   

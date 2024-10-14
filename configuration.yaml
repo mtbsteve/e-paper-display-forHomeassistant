@@ -1,0 +1,25 @@
+# Insert template into configuration.yaml 
+template:
+  - trigger:
+      - platform: time_pattern 
+        hours: /1
+    action:
+      - service: weather.get_forecasts
+        target:
+          entity_id: 
+            - weather.forecast_home
+        data:
+            type: daily
+        response_variable: daily1
+    sensor:
+      - name: Forecast next days
+        unique_id: Forecast_next_days
+        state: "{{ daily1['weather.forecast_home'].forecast[0].condition }}"
+        attributes:
+          forecast: "{{ daily1['weather.forecast_home'].forecast }}"
+
+
+
+
+
+
