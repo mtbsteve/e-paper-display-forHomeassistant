@@ -10,7 +10,7 @@ Required components:
 - A 13x18cm picture frame
 
 You can purchase the Waveshare components at eg Amazon. Please notice that there are different versions available.
-I ordered the V3 version which supports 3 colors (white/black/red). Unfortunately, if you try to use the red color, the refresh times raise up to 20 seconds with the current ESPhome drivers. You may check the developers discussion at: https://github.com/esphome/feature-requests/issues/239 for the latest status.
+I ordered the V3 version which supports 3 colors (white/black/red). Unfortunately, if you try to use the red color, the refresh times raise up to 10 seconds with the current ESPhome drivers. You may check the developers discussion at: https://github.com/esphome/feature-requests/issues/239 for the latest status.
 
 Steps to install:
 1. make sure you have ESPhome installed in HA
@@ -24,6 +24,7 @@ Steps to install:
 7. Copy the epaper75_V2.yaml configuration file into the config/esphome directory.
 8. In the ESPhome addon in HA, add the epaper75_V2.yaml integration by using the "Add Integration" button
 
+For the glyphs codes, you may use this overview: https://pictogrammers.github.io/@mdi/font/6.5.95/
 Note that all sensors implemented in the epaper75_V2.yaml file need to be adapted to your configuration since I am referring to the following HA addons in my home:
 - Tibber
 - EMS-ESP (Bosch/Buderus heatpumps)
