@@ -37,8 +37,8 @@ Note that all sensors implemented in the epaper75_V2.yaml file need to be adapte
 - and the default HA Weather Services (Meteorologisk institutt (Met.no))
 
 For battery power supply, I am using 3x1.5V AA Lithium non-rechargable batteries which fit nicely on the back of the frame.  
-For the voltage measurement, I am using the built-in DAC of the ESP32. The input for the DAC is 3.3V, if you use 3x1.5V batteries you need to add a voltage divider.
-I am using a 100k Ohm resistor solderd between the DAC pin and ground, and a 6K Ohm resistor soldered between the 5V input pin and the DAC pin.
+For the voltage measurement, I am using the built-in ADC on pin 34 of the ESP32. The input for the ADC is 3.3V, if you use 3x1.5V batteries you need to add a voltage divider.
+I am using a 100k Ohm resistor solderd between the DAC pin and ground, and a 6K Ohm resistor soldered between the 5V input pin and the ADC pin.
 Depending on your power source of choice, you may need to adjust the resistor values accordingly and adjust the scaling factor as documented in the yaml accordingly.
 In addition to stabilize the battery I added a 1000uF capacitor between 5V input and ground.
 
