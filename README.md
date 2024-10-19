@@ -4,7 +4,7 @@ This dashboaed is based on the great work of Markus Hottenrott https://www.it-ad
 
 Version 3 of the yaml file adds 3 colors (black, white, red) and battery power supply. Furthermore the display update can be externally triggered from Homeassistant, eg. by using a motion sensor.
 
-![Waveshare e-Paper Display](https://github.com/mtbsteve/e-paper-display-forHomeassistant/blob/main/IMG_1116.jpg)
+![Waveshare e-Paper Display with motion sensor](https://github.com/mtbsteve/e-paper-display-forHomeassistant/blob/main/IMG_1144.jpg)
 
 Required components:
 - Waveshare 7.5" e-paper display
@@ -42,7 +42,7 @@ I am using a 100k Ohm resistor solderd between the DAC pin and ground, and a 6K 
 Depending on your power source of choice, you may need to adjust the resistor values accordingly and adjust the scaling factor as documented in the yaml accordingly.
 In addition to stabilize the battery I added a 1000uF capacitor between 5V input and ground.
 
-
+![Backside with battery power supply](https://github.com/mtbsteve/e-paper-display-forHomeassistant/blob/main/IMG_1143.jpg)
 
 Next Steps to implement:
 - sleep mode, refresh only if data changes
