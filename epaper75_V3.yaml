@@ -1,0 +1,713 @@
+substitutions:
+  name: epaper75
+  friendly_name: epaper75
+  time_zone: "Europe/Berlin" # Check https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  adc_pin: GPIO34
+  sleep_time: 60min # this is the default but is overridden
+
+# Home Assistant entitites:
+  ha_trigger_update: input_boolean.epaper_display_update
+
+# Waveshare eInk Board:
+  status_led_pin: GPIO2
+  mosi_pin: GPIO14
+  clk_pin: GPIO13
+  cs_pin: GPIO15
+  dc_pin: GPIO27
+  reset_pin: GPIO26
+  busy_pin: GPIO25
+  busy_inverted: "true" #needed on most newer boards: check ESPHome or component notes
+  reset_duration: 2ms
+
+esphome:
+  name: $name
+  friendly_name: $friendly_name
+  on_boot:
+      priority: 200.0
+      then:
+        - script.execute: refresh_screen
+
+# Everything here is meant for an 7.5 inch tricolor display, which is not directly supported by ESPHome
+  # See here for full list of directly-supported displays: https://esphome.io/components/display/waveshare_epaper.html
+  # if using only BW, then you may need to edit colors below (change red to same as black)
+  # model: 7.50in-bV2 # Looks good but crazy flashing (use white 100%)
+  # model: 7.50in-bV3 # a bit washed-out (use white 100%)
+  # model: 7.50inV2alt # a bit washed-out (use white 100%)
+
+  # Two custom components work with the 7.5 inch Waveshare displays... If you want to see the full discussion: https://github.com/esphome/feature-requests/issues/239
+
+  # atomicmike's custom component should be closer to the manufacturer's spec but but might have issues - be sure it's specified properly below too! (inverted true)
+  # model: 7.50inv2b
+  # reset_duration: 3ms
+
+external_components:
+# use atomicmike's repo:
+#  - source:
+#      type: git
+#      url: https://github.com/atomicmike/esphome.git
+#      ref: waveshare-color-2023.12
+#    components: [ waveshare_epaper ]
+
+# use twisterss' repo: reset_duration: 2ms
+  - source:
+      type: git
+      url:  https://github.com/twisterss/esphome-dev.git
+      ref: waveshare-red-black
+    components: [ waveshare_epaper ]
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "xxxx"
+
+ota:
+  - platform: esphome
+    password: "xxxx"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Epaper75 Fallback Hotspot"
+    password: "xxxx"
+
+captive_portal:
+
+# Example configuration entry
+spi:
+  clk_pin: $clk_pin
+  mosi_pin: $mosi_pin
+
+
+# Define colors - this design is white on black so this is necessary
+color:
+  - id: color_blk
+    red: 100%
+    green: 100%
+    blue: 100%
+    white: 100%
+  - id: color_red
+    red: 100%
+    green: 0%
+    blue: 0%
+    white: 0%
+
+script:
+  - id: refresh_screen
+    mode: restart
+    then:
+      - delay: 15s # Wait a bit longer so all the items are received. Might need to be more (5s not enough, 10s sometimes isn't enough)
+      - logger.log: "Sensor data received."
+      - logger.log: "Refreshing display..."
+      - component.update: eink_display   
+ 
+            
+ 
+
+# --- Fonts --------------------------------------------------------------------  
+font:
+  - file: 'fonts/GothamRnd-Bold.ttf'
+    id: openSansBold_font
+    size: 20
+    glyphs:
+      ['&', '@', '!', '?', ',', '.', '"', '%', '(', ')', '+', '-', '_', ':', '°', '0',
+       '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
+       'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+       'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
+       'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+       'u', 'v', 'w', 'x', 'y', 'z', 'å', 'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', '/', '€', '’', 'ß']
+ 
+  - file: 'fonts/GothamRnd-Bold.ttf'
+    id: watch_font
+    size: 90
+    glyphs:
+      [':', ".", '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+       
+  # https://pictogrammers.github.io/@mdi/font/6.5.95/    Unicodes
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: materialdesign_icons_25
+    size: 25
+    glyphs: [
+      "\U000F050F", # mdi-thermometer
+      "\U000F0F55", # mdi-home-thermometer-outline
+      "\U000F0F54", # mdi-home-thermometer
+      "\U000F058E", # mdi-water-percent
+      "\U000F029A", # mdi-gauge
+      "\U000F059B", # mdi-weather-sunset
+      "\U000F059C", # mdi-weather-sunrise
+      "\U000F10C2", # mdi-thermometer-high
+      "\U000F10C3"  # mdi-thermometer-low
+      ]
+       
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: materialdesign_icons_32
+    size: 32
+    glyphs: [
+      "\U000F091F", # mdi-wifi-strength-1
+      "\U000F0922", # mdi-wifi-strength-2
+      "\U000F0925", # mdi-wifi-strength-3
+      "\U000F0928", # mdi-wifi-strength-4
+      "\U000F092B", # mdi-wifi-strength-alert-outline
+       
+      "\U000F0590", # weather-cloudy
+      "\U000F0F2F", # weather-cloudy-alert
+      "\U000F0E6E", # weather-cloudy-arrow-right
+      "\U000F0591", # weather-fog
+      "\U000F0592", # weather-hail
+      "\U000F0F30", # weather-hazy
+      "\U000F0898", # weather-hurricane
+      "\U000F0593", # weather-lightning
+      "\U000F067E", # weather-lightning-rainy
+      "\U000F0594", # weather-night
+      "\U000F0F31", # weather-night-partly-cloudy
+      "\U000F0595", # weather-partly-cloudy
+      "\U000F0F32", # weather-partly-lightning
+      "\U000F0F33", # weather-partly-rainy
+      "\U000F0F34", # weather-partly-snowy
+      "\U000F0F35", # weather-partly-snowy-rainy
+      "\U000F0596", # weather-pouring
+      "\U000F0597", # weather-rainy
+      "\U000F0598", # weather-snowy
+      "\U000F0F36", # weather-snowy-heavy
+      "\U000F067F", # weather-snowy-rainy
+      "\U000F0599", # weather-sunny
+      "\U000F0F37", # weather-sunny-alert
+      "\U000F14E4", # weather-sunny-off
+      "\U000F059A", # weather-sunset
+      "\U000F059B", # weather-sunset-down
+      "\U000F059C", # weather-sunset-up
+      "\U000F0F38", # weather-tornado
+      "\U000F059D", # weather-windy
+      "\U000F059E", # weather-windy-variant
+      "\U000F10CD", # mdi-battery-warning
+      "\U000F12A3", # mdi-battery-high
+      "\U000F12A2", # mdi-battery-med
+      "\U000F12A1" # mdi-battery-low
+      ]
+       
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: materialdesign_icons_50
+    size: 60
+    glyphs: [
+      "\U000F0590", # weather-cloudy
+      "\U000F0F2F", # weather-cloudy-alert
+      "\U000F0E6E", # weather-cloudy-arrow-right
+      "\U000F0591", # weather-fog
+      "\U000F0592", # weather-hail
+      "\U000F0F30", # weather-hazy
+      "\U000F0898", # weather-hurricane
+      "\U000F0593", # weather-lightning
+      "\U000F067E", # weather-lightning-rainy
+      "\U000F0594", # weather-night
+      "\U000F0F31", # weather-night-partly-cloudy
+      "\U000F0595", # weather-partly-cloudy
+      "\U000F0F32", # weather-partly-lightning
+      "\U000F0F33", # weather-partly-rainy
+      "\U000F0F34", # weather-partly-snowy
+      "\U000F0F35", # weather-partly-snowy-rainy
+      "\U000F0596", # weather-pouring
+      "\U000F0597", # weather-rainy
+      "\U000F0598", # weather-snowy
+      "\U000F0F36", # weather-snowy-heavy
+      "\U000F067F", # weather-snowy-rainy
+      "\U000F0599", # weather-sunny
+      "\U000F0F37", # weather-sunny-alert
+      "\U000F14E4", # weather-sunny-off
+      "\U000F059A", # weather-sunset
+      "\U000F059B", # weather-sunset-down
+      "\U000F059C", # weather-sunset-up
+      "\U000F0F38", # weather-tornado
+      "\U000F059D", # weather-windy
+      "\U000F059E", # weather-windy-variant
+      "\U000F008E", # battery_empty
+      "\U000F12A1", # battery_low
+      "\U000F12A2", # battery_medium
+      "\U000F12A3", # battery_full
+      "\U000F125E", # battery_dead
+      "\U000F0A72", # solar_power
+      "\U000F089E", # battery_charge
+      "\U000F140B", # Energy
+      "\U000F01AD", # Euro currency
+      "\U000F03C8", # Watertemp
+      "\U000F0F92" # boiler
+      ]
+ 
+# --- Display Layout -----------------------------------------------------------
+display:
+  - platform: waveshare_epaper
+    id: eink_display
+    cs_pin: $cs_pin
+    dc_pin: $dc_pin
+    reset_pin: $reset_pin
+    busy_pin: 
+      number: $busy_pin
+      inverted: $busy_inverted
+    # model: 7.50in-bv3
+    model: 7.50in-bv2-rb
+    reset_duration: $reset_duration
+    update_interval: never
+    lambda: |
+      int x, y;
+      float jaz;
+
+      // Grid
+      it.line(0, 108, 800, 108); // Horizontal header
+      it.line(0, 440, 800, 440); // Horizontal footer
+      it.line(266, 108, 266, 440); // Vertical first line
+      it.line(532, 108, 532, 440); // Vertical second line
+      it.line(266, 217, 800, 217); // Horizontal segment1
+      it.line(266, 326, 800, 326); // Horizontal segment2
+      
+     
+      // Sunrise / Sunset
+      it.printf(5, 40, id(materialdesign_icons_25), TextAlign::BASELINE_LEFT, "\U000F059C");
+      it.printf(35, 40, id(openSansBold_font), TextAlign::BOTTOM_LEFT, id(epaper_sunrise).state.c_str());
+       
+      it.printf(5, 70, id(materialdesign_icons_25), TextAlign::BASELINE_LEFT, "\U000F059B");
+      it.printf(35, 70, id(openSansBold_font), TextAlign::BOTTOM_LEFT, id(epaper_sunset).state.c_str());
+      
+      // Temperature inside / outside
+      it.printf(110, 40, id(materialdesign_icons_25), TextAlign::BASELINE_LEFT, "\U000F0F54"); 
+      it.printf(140, 40, id(openSansBold_font), TextAlign::BOTTOM_LEFT, "%s °C", id(temperature_inside).state.c_str()); // use your own temp sensor
+      
+      it.printf(110, 70, id(materialdesign_icons_25), TextAlign::BASELINE_LEFT, "\U000F0F55"); 
+      it.printf(140, 70, id(openSansBold_font), TextAlign::BOTTOM_LEFT, "%s °C", id(temperature_outside).state.c_str());// use your own temp sensor
+      
+      //Time
+      it.strftime(799, 97, id(watch_font), TextAlign::BOTTOM_RIGHT, "%H:%M", id(time_homeassistant).now());
+      it.strftime(798, 107, id(openSansBold_font), color_blk, TextAlign::BOTTOM_RIGHT, "%A, %d.%m.%y, KW %W", id(time_homeassistant).now());
+       
+      // Current weather 
+      // https://www.home-assistant.io/integrations/weather/
+      // weahtericon;temperature;humidity,pressure;wind_speed
+      // ex. data:   cloudy;5,9;50;1025,6;16,9
+ 
+      std::map <std::string, std::string> weatherMap =  {
+      std::make_pair("exceptional","\U000F0F2F"),
+      std::make_pair("cloudy","\U000F0590"),
+      std::make_pair("cloudy-alert","\U000F0F2F"),
+      std::make_pair("fog","\U000F0591"),
+      std::make_pair( "hail","\U000F0592"),
+      std::make_pair( "hazy","\U000F0F30"),
+      std::make_pair( "hurricane","\U000F0898"),
+      std::make_pair( "lightning","\U000F0593"),
+      std::make_pair( "lightning-rainy","\U000F067E"),
+      std::make_pair( "night","\U000F0594"),
+      std::make_pair( "clear-night","\U000F0594"),
+      std::make_pair( "night-partly-cloudy","\U000F0F31"),
+      std::make_pair( "partly-cloudy","\U000F0595"),
+      std::make_pair( "partlycloudy","\U000F0595"),
+      std::make_pair( "partly-lightning","\U000F0F32"),
+      std::make_pair( "partly-rainy","\U000F0F33"),
+      std::make_pair( "partly-snowy","\U000F0F34"),
+      std::make_pair( "partly-snowy-rainy","\U000F0F35"),
+      std::make_pair( "pouring","\U000F0596"),
+      std::make_pair( "rainy","\U000F0597"),
+      std::make_pair( "snowy","\U000F0598"),
+      std::make_pair( "snowy-heavy","\U000F0F36"),
+      std::make_pair( "snowy-rainy","\U000F067F"),
+      std::make_pair( "sunny","\U000F0599"),
+      std::make_pair( "sunny-alert","\U000F0F37"),
+      std::make_pair( "sunny-off","\U000F14E4"),
+      std::make_pair( "tornado","\U000F0F38"),
+      std::make_pair( "windy","\U000F059D"),
+      std::make_pair( "windy-variant","\U000F059E")};
+       
+      if(id(epaper_weather_actual).has_state()) {
+        std::string actualWeatherCSV = id(epaper_weather_actual).state; //("cloudy;5,9;50;1025,6;16,9");
+        ESP_LOGI("Weather today", "%s", actualWeatherCSV.c_str());
+        std::size_t current, previous = 0;
+        char delim = ';';
+        current = actualWeatherCSV.find(delim);
+        x = 5; y = 200;
+        for (int i=0; i<5; i++) {
+           const char * value = actualWeatherCSV.substr(previous, current - previous).c_str();
+           if(i == 0) { // icon
+             std::string unicodeWeatherIcon = weatherMap.at(value);
+             it.printf(x , y, id(materialdesign_icons_50), TextAlign::BASELINE_LEFT, unicodeWeatherIcon.c_str()); 
+             y = 120;
+             x = x + 90;
+           } else if (i == 1) { // temperature
+              it.printf(x, y, id(openSansBold_font), TextAlign::BASELINE_LEFT,"%s  °C", value);
+           } else if (i == 2) { // humidity
+              it.printf(x, y, id(openSansBold_font), TextAlign::BASELINE_LEFT,"%s %s", value, "%");
+           } else if (i == 3) { // pressure
+                it.printf(x, y, id(openSansBold_font), TextAlign::BASELINE_LEFT,"%s PA", value);
+           } else if (i == 4) { // windpeed
+              it.printf(x, y, id(openSansBold_font), TextAlign::BASELINE_LEFT,"%s m/s", value);
+           }
+           y += 25;
+           previous = current + 1;
+           current = actualWeatherCSV.find(delim, previous);
+        }
+      }
+      
+      // Weather Forecast
+      if(id(epaper_weather_forecast).has_state()) {
+        std::string forecastWeatherCSV = id(epaper_weather_forecast).state; // Mon;sunny;16,5;5,1;Tue;sunny;17,2;6,8;Wed;sunny;15,4;2,7;Thu;sunny;15,3;4,6;Fri;partlycloudy;16,0;3,5
+        ESP_LOGI("Weather forecast", "%s", forecastWeatherCSV.c_str());
+        std::size_t current, previous = 0;
+        char delim = ';';
+        current = forecastWeatherCSV.find(delim);
+        x = 5; y = 270;
+        int nextRow =0;
+        for (int i=0; i<20; i++) {
+           const char * value = forecastWeatherCSV.substr(previous, current - previous).c_str();
+           if(i == 0 || i == 4 || i == 8 || i == 12 || i == 16) { // Weekday
+              it.printf(x, y, id(openSansBold_font), TextAlign::BASELINE_LEFT,"%s", value);
+           } else if (i == 1 || i == 5 || i == 9 || i == 13 || i == 17) { // icon
+             it.printf(x + 50  , y, id(materialdesign_icons_32), TextAlign::BASELINE_LEFT, weatherMap.at(value).c_str()); 
+           } else if (i == 2 || i == 6 || i == 10 || i == 14 || i == 18) { // Temp high
+              it.printf(x + 100 , y, id(openSansBold_font), TextAlign::BASELINE_LEFT,"%s°C", value);
+           } else if (i == 3 || i == 7 || i == 11 || i == 15 || i == 19) { // Temp low
+              it.printf(x + 170, y, id(openSansBold_font), TextAlign::BASELINE_LEFT,"%s°C", value);
+           }
+           nextRow = nextRow + 1;
+           if (nextRow == 4) {
+             y += 28;
+             nextRow = 0;
+           }
+           previous = current + 1;
+           current = forecastWeatherCSV.find(delim, previous);
+        }
+      }
+
+       
+      // -- Footer ---
+      //IP Adress
+      it.printf(5, 470, id(openSansBold_font), TextAlign::BASELINE_LEFT, "IP: %s", id(ip_address).state.c_str());
+       
+      // WiFi Signal Strength
+      x = 215, y = 476;
+      if (id(wifisignal).state >= -50) {
+         it.print(x, y, id(materialdesign_icons_32), TextAlign::BOTTOM_RIGHT, "\U000F0928");
+         ESP_LOGI("WiFi", "Exellent");
+      } else if (id(wifisignal).state  >= -60) {
+         it.print(x, y, id(materialdesign_icons_32), TextAlign::BOTTOM_RIGHT, "\U000F0925");
+         ESP_LOGI("WiFi", "Good");
+      } else if (id(wifisignal).state  >= -67) {
+         it.print(x, y, id(materialdesign_icons_32), TextAlign::BOTTOM_RIGHT, "\U000F0922");
+         ESP_LOGI("WiFi", "Fair");
+      } else if (id(wifisignal).state  >= -70) {
+         it.print(x, y, id(materialdesign_icons_32), color_red, TextAlign::BOTTOM_RIGHT, "\U000F091F");
+         ESP_LOGI("WiFi", "Weak");
+      } else {
+         it.print(x, y, id(materialdesign_icons_32), color_red, TextAlign::BOTTOM_RIGHT, "\U000F092B");
+         ESP_LOGI("WiFi", "Unlikely");
+      }
+
+      // PV_Heatpump_Tibber_Parameters
+      x = 257, y = 200;
+      // Battery Icons:
+      if (id(battery_soc).state >= 80) {
+         it.print(x, y, id(materialdesign_icons_50), TextAlign::BASELINE_LEFT, "\U000F12A3");
+      } else if (id(battery_soc).state  >= 50) {
+         it.print(x, y, id(materialdesign_icons_50), TextAlign::BASELINE_LEFT, "\U000F12A2");
+      } else if (id(battery_soc).state  >= 20) {
+         it.print(x, y, id(materialdesign_icons_50), color_red, TextAlign::BASELINE_LEFT, "\U000F12A1");
+      } else if (id(battery_soc).state  >= 0) {
+         it.print(x, y, id(materialdesign_icons_50), color_red, TextAlign::BASELINE_LEFT, "\U000F008E");
+      } else {
+         it.print(x, y, id(materialdesign_icons_50), color_red, TextAlign::BASELINE_LEFT, "\U000F125E"); //battery dead
+      }
+
+      // Icons PV, Power, Price, Heatpump
+      it.print(x + 8 , y + 100 , id(materialdesign_icons_50), TextAlign::BASELINE_LEFT, "\U000F0A72");
+      it.print(x , y + 210 , id(materialdesign_icons_50), TextAlign::BASELINE_LEFT, "\U000F140B");
+      it.print(x + 266 , y , id(materialdesign_icons_50), TextAlign::BASELINE_LEFT, "\U000F0F92");
+      it.print(x + 273 , y + 210 , id(materialdesign_icons_50), TextAlign::BASELINE_LEFT, "\U000F01AD");
+      it.print(x + 275 , y + 100 , id(materialdesign_icons_50), TextAlign::BASELINE_LEFT, "\U000F03C8");
+      // Battery values
+      it.printf(x + 71 , y - 55 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "SOC: %.1f %%", id(battery_soc).state);
+      it.printf(x + 71 , y - 25 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "L/Entl.: %.1f kW", id(battery_charge_power).state);
+      it.printf(x + 71 , y + 5, id(openSansBold_font), TextAlign::BASELINE_LEFT, "PV-Übersch.: %s", id(pv_ueberschuss).state.c_str());
+      // Tibber last meter
+      it.printf(x + 71 , y + 158 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "Bez.Haus: %.2f kW", id(tibber_powerhaus).state);
+      it.printf(x + 71 , y + 188 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "Bez.Gar: %.2f kW", id(tibber_powergarage).state);
+      it.printf(x + 71 , y + 218 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "Einsp.: %.2f kW", id(tibber_powerproduction).state);
+      // Tibber pricing
+      it.printf(x + 337 , y + 158 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "Preis: %.0f ct/kWh", id(electicityprice).state);
+      it.printf(x + 337 , y + 188 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "H/T: %.0f", id(maxprice).state);
+      it.printf(x + 417 , y + 188 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "/%.0f ct/kWh", id(minprice).state);
+      if  (id(pricelevel).state == "EXPENSIVE" || id(pricelevel).state == "VERY_EXPENSIVE") {
+        it.printf(x + 337 , y + 218 , id(openSansBold_font), color_red, TextAlign::BASELINE_LEFT, "Level: %s ", id(pricelevel).state.c_str());
+      } else {
+        it.printf(x + 337 , y + 218 , id(openSansBold_font), color_blk, TextAlign::BASELINE_LEFT, "Level: %s ", id(pricelevel).state.c_str());
+      }
+      // Solar production
+      it.printf(x + 71 , y + 50, id(openSansBold_font), TextAlign::BASELINE_LEFT, "Akt.Prod.: %.1f kW", id(solarproduction).state);
+      it.printf(x + 71 , y + 80, id(openSansBold_font), TextAlign::BASELINE_LEFT, "Pr.heute: %.1f kWh", id(solarproductiontoday).state);
+      it.printf(x + 71 , y + 110 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "Forecast: %.0f kWh", id(solcast_forecast).state);
+      // Heatpump
+      it.printf(x + 337 , y - 55, id(openSansBold_font), TextAlign::BASELINE_LEFT, "Status: %s", id(hpactivity).state.c_str());
+      jaz = (id(supptotal).state / id(constotal).state);
+      it.printf(x + 337 , y - 25, id(openSansBold_font), TextAlign::BASELINE_LEFT, "JAZ: %.2f", (jaz));
+      it.printf(x + 337 , y + 50  , id(openSansBold_font), TextAlign::BASELINE_LEFT, "HK : %.1f °C", id(hk1currflowtemp).state);
+      it.printf(x + 337 , y +80 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "FBH: %.1f °C", id(hk2currflowtemp).state);
+      it.printf(x + 337 , y +110 , id(openSansBold_font), TextAlign::BASELINE_LEFT, "WW: %.1f °C", id(wwcurrflowtemp).state);
+      
+      if  (id(evu_lock).state == "on") {
+        it.printf(x + 337 , y + 5, id(openSansBold_font), color_red, TextAlign::BASELINE_LEFT, "EVU-Sperre: %s", id(evu_lock).state.c_str());
+      } else {
+        it.printf(x + 337 , y + 5, id(openSansBold_font), color_blk, TextAlign::BASELINE_LEFT, "EVU-Sperre: %s", id(evu_lock).state.c_str());
+      }
+      
+      // ESP Home UpTime
+      // if (id(uptime_human).has_state()) {
+      //   it.printf(798, 475, id(openSansBold_font), TextAlign::BOTTOM_RIGHT, "UpTime: %s", id(uptime_human).state.c_str());
+      // }
+
+      // Refresh Timestamp with time and day
+      // from https://community.home-assistant.io/t/esphome-show-time/348903
+      char str[17];
+      time_t currTime = id(time_homeassistant).now().timestamp;
+      strftime(str, sizeof(str), "%l:%M%p %a", localtime(&currTime));
+      it.printf(798, 475, id(openSansBold_font), color_blk, TextAlign::BOTTOM_RIGHT, "Update um %s", str);
+      
+      
+      // Battery Icon by Trip5 (placement at bottom right can be tricky)
+      std::map<std::string, std::string> battery_icon_map
+      {
+        {"batteryhigh", "\U000F12A3"},
+        {"batterymed", "\U000F12A2"},
+        {"batterylow", "\U000F12A1"},
+        {"batterywarn", "\U000F10CD"}
+      };
+
+      int batt_x = 431; 
+      int batt_y = 478;
+      float batt_v = float(id(battery_adc).state);
+
+      if (0 <= batt_v && batt_v < 4.2) { it.printf(batt_x, batt_y, id(materialdesign_icons_32), color_red, TextAlign::BOTTOM_LEFT, "%s", battery_icon_map["batterywarn"].c_str()); }
+      if (4.2 <= batt_v && batt_v < 4.5) { it.printf(batt_x, batt_y, id(materialdesign_icons_32), color_red, TextAlign::BOTTOM_LEFT, "%s", battery_icon_map["batterylow"].c_str()); }
+      if (4.5 <= batt_v && batt_v < 4.9) { it.printf(batt_x, batt_y, id(materialdesign_icons_32), color_blk, TextAlign::BOTTOM_LEFT, "%s", battery_icon_map["batterymed"].c_str()); }
+      if (4.9 <= batt_v) { it.printf(batt_x, batt_y, id(materialdesign_icons_32), color_blk, TextAlign::BOTTOM_LEFT, "%s", battery_icon_map["batteryhigh"].c_str()); }
+
+      it.printf(310, 475, id(openSansBold_font), color_blk, TextAlign::BOTTOM_LEFT, "Batt: %.2f V", (batt_v));
+      
+# --- Sensors ------------------------------------------------------------------
+binary_sensor:
+  - platform: homeassistant
+    id: trigger_update
+    name: "$friendly_name Trigger Update"
+    entity_id: '${ha_trigger_update}'
+    on_state:
+      then:
+        - component.update: eink_display
+
+
+sensor:
+  # ESP Home UpTime
+  - platform: uptime
+    id: uptime_sensor
+    update_interval: 60s
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human
+            state: !lambda |-
+              int seconds = round(id(uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? String(days) + ":" : "000:") +
+                (hours ? String(hours) + ":" : "00:") +
+                (minutes ? String(minutes) + ":" : "00:") +
+                (String(seconds) + "")
+              ).c_str();  
+
+  - platform: adc
+    name: "$friendly_name Battery"
+    id: battery_adc
+    pin: $adc_pin
+    attenuation: 12db
+    update_interval: 3s
+    entity_category: "diagnostic"
+    accuracy_decimals: 2
+    filters:
+      # this multiply number may need to be manually adjusted with power on while idle
+      # I used a LiPo battery: negative pole -> 33K resistor -> ADC GPIO -> 100K resistor -> GND
+      - multiply: 1.85
+      #use moving median to smooth spikes
+      - median:
+          window_size: 5
+          send_every: 5
+          send_first_at: 5
+
+
+  - platform: wifi_signal
+    id: wifisignal
+    update_interval: 60s
+ 
+  - platform: homeassistant
+    id: battery_soc
+    entity_id: sensor.solaredge_b1_state_of_energy
+    internal: True
+
+  - platform: homeassistant
+    filters:
+      - multiply: 0.001
+    id: battery_charge_power
+    entity_id: sensor.solaredge_b1_dc_power
+    internal: True
+
+  - platform: homeassistant
+    filters:
+      - multiply: 0.001
+    id: tibber_powerhaus
+    entity_id: sensor.power_haus
+    internal: True
+
+  - platform: homeassistant
+    filters:
+      - multiply: 0.001
+    id: tibber_powerproduction
+    entity_id: sensor.power_production_haus
+    internal: True
+
+  - platform: homeassistant
+    filters:
+      - multiply: 0.001
+    id: tibber_powergarage
+    entity_id: sensor.power_garage
+    internal: True
+
+  - platform: homeassistant
+    id: solcast_forecast
+    entity_id: sensor.solcast_pv_forecast_forecast_today
+    internal: True
+
+  - platform: homeassistant
+    filters:
+      - multiply: 0.001
+    id: solarproduction
+    entity_id: sensor.solarproduction
+    internal: True
+
+  - platform: homeassistant
+    filters:
+      - multiply: 100
+    id: electicityprice
+    entity_id: sensor.electricity_price_haus
+    internal: True
+
+  - platform: homeassistant
+    id: hk1currflowtemp
+    entity_id: sensor.boiler_curflowtemp
+    internal: True
+
+  - platform: homeassistant
+    id: wwcurrflowtemp
+    entity_id: sensor.boiler_wwcurtemp2
+    internal: True
+
+  - platform: homeassistant
+    id: hk2currflowtemp
+    entity_id: sensor.mixer_hc2_flowtemphc
+    internal: True
+
+  - platform: homeassistant
+    filters:
+      - multiply: 0.001
+    id: solarproductiontoday
+    entity_id: sensor.solaredgecloud_energy_today
+    internal: True
+
+  - platform: homeassistant
+    id: supptotal
+    entity_id: sensor.boiler_nrgsupptotal
+    internal: True
+
+  - platform: homeassistant
+    id: constotal
+    entity_id: sensor.boiler_nrgconstotal
+    internal: True
+
+  - platform: homeassistant
+    filters:
+      - multiply: 100
+    id: maxprice
+    entity_id: sensor.epaper_maxprice
+    internal: True
+
+  - platform: homeassistant
+    filters:
+      - multiply: 100
+    id: minprice
+    entity_id: sensor.epaper_minprice
+    internal: True
+
+ 
+text_sensor:
+  # ESP WLAN IP Address
+  - platform: wifi_info
+    ip_address:
+      name: "${name} IP Address"
+      id: ip_address
+  # ESP Home UpTime
+  - platform: template
+    id: uptime_human
+    icon: mdi:clock-start
+  # Weather forecast 
+  - platform: homeassistant
+    id: epaper_weather_actual
+    entity_id: sensor.epaper_weather_actual
+    internal: true
+  - platform: homeassistant
+    id: epaper_weather_forecast
+    entity_id: sensor.epaper_weather_forecast
+    internal: true
+  - platform: homeassistant
+    id: epaper_sunrise
+    entity_id: sensor.epaper_sunrise
+    internal: true
+  - platform: homeassistant
+    id: epaper_sunset
+    entity_id: sensor.epaper_sunset   
+    internal: true
+  - platform: homeassistant
+    id: temperature_inside
+    entity_id: sensor.thermostat_hc2_remotetemp
+    internal: True
+  - platform: homeassistant
+    id: temperature_outside
+    entity_id: sensor.thermostat_dampedoutdoortemp
+    internal: True
+  - platform: homeassistant
+    id: hpactivity
+    entity_id: sensor.boiler_hpactivity
+    internal: True
+
+  - platform: homeassistant
+    id: evu_lock
+    entity_id: switch.evushelly_switch_0
+    internal: True
+
+  - platform: homeassistant
+    id: pv_ueberschuss
+    entity_id: switch.pvshelly_switch_0
+    internal: True
+
+  - platform: homeassistant
+    id: pricelevel
+    entity_id: sensor.epaper_pricelevel
+    internal: True
+
+time:
+  - platform: homeassistant
+    id: time_homeassistant   
